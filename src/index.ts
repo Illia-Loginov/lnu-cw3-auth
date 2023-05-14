@@ -12,6 +12,6 @@ if (serverConfig.env === 'production') {
   };
 } else {
   app.listen(serverConfig.port, () => {
-    console.log(`Server started on port ${serverConfig.port}`);
+    console.log(`Auth server started on port ${serverConfig.port}`);
   });
 }

@@ -1,9 +1,13 @@
-import express, { NextFunction, Request, Response } from 'express';
+import express from 'express';
+import { authRoutes, healthcheck } from './routes';
+import { errorHandler } from './middlewares';
 
 const app = express();
 
-app.get('/', (req: Request, res: Response, next: NextFunction) => {
-  res.status(200).json({ message: 'Healthy' });
-});
+app.use(express.json());
+
+app.get('/', healthcheck);
+app.use('/auth', authRoutes);
+app.use(errorHandler);
 
 export default app;
