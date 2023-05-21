@@ -1,6 +1,5 @@
 generator client {
-  provider      = "prisma-client-js"
-  binaryTargets = ["native", "rhel-openssl-1.0.x"]
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -9,14 +8,32 @@ datasource db {
 }
 
 model User {
-  username     String         @id @unique
-  password     String
-  RefreshToken RefreshToken[]
+  username      String         @id
+  password      String
+  refreshTokens RefreshToken[]
+  chats         Chat[]
+  Message       Message[]
 }
 
 model RefreshToken {
-  token      String   @id @unique
+  token      String   @id
   expiration DateTime
   user       User     @relation(fields: [username], references: [username])
   username   String
+}
+
+model Chat {
+  id       String    @id @default(uuid())
+  members  User[]
+  messages Message[]
+}
+
+model Message {
+  id             String   @id @default(uuid())
+  chat           Chat     @relation(fields: [chatId], references: [id])
+  sender         User     @relation(fields: [senderUsername], references: [username])
+  createdAt      DateTime @default(now())
+  content        String
+  chatId         String
+  senderUsername String
 }

@@ -2,9 +2,8 @@ import { compare, hash } from 'bcryptjs';
 import * as validate from './auth.validate';
 import { hashConfig, tokenConfig } from '../../config';
 import { sign } from 'jsonwebtoken';
-import { PrismaClient, User } from '@prisma/client';
-import { UnauthenticatedError, UnauthorizedError } from '../../utils';
-const prisma = new PrismaClient();
+import { User } from '@prisma/client';
+import { UnauthenticatedError, prisma } from '../../utils';
 
 export const createUser = async (payload: any) => {
   const userData = await validate.user(payload);
@@ -53,7 +52,7 @@ export const generateTokens = async (user: User) => {
     }
   });
 
-  return { refreshToken, accessToken };
+  return { refreshToken, accessToken, username: user.username };
 };
 
 export const refreshToken = async (payload: any) => {
@@ -65,12 +64,12 @@ export const refreshToken = async (payload: any) => {
   });
 
   if (!tokenData) {
-    throw new UnauthorizedError('Invalid refresh token');
+    throw new UnauthenticatedError('Invalid refresh token');
   }
 
   if (tokenData.expiration < new Date()) {
     await prisma.refreshToken.delete({ where: { token: refreshToken } });
-    throw new UnauthorizedError('Refresh token expired');
+    throw new UnauthenticatedError('Refresh token expired');
   }
 
   const accessToken = sign(
@@ -79,11 +78,17 @@ export const refreshToken = async (payload: any) => {
     { expiresIn: tokenConfig.accessTokenExpiresIn }
   );
 
-  return accessToken;
+  return { accessToken, username: tokenData.username };
 };
 
 export const logout = async (payload: any) => {
   const { refreshToken } = await validate.refreshToken(payload);
 
-  await prisma.refreshToken.delete({ where: { token: refreshToken } });
+  const existingToken = await prisma.refreshToken.findUnique({
+    where: { token: refreshToken }
+  });
+
+  if (existingToken) {
+    await prisma.refreshToken.delete({ where: { token: refreshToken } });
+  }
 };
